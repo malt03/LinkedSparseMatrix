@@ -44,11 +44,12 @@ namespace lsm{
 			TYPE val(const int col) const;
 			Element& operator[](int col);
 
-			HeadElement operator-();
-			HeadElement operator*(const TYPE& n);
+			const HeadElement operator-() const;
+			const HeadElement operator*(const TYPE& n) const;
 			HeadElement& operator+=(const HeadElement& phi);
 			HeadElement& operator-=(const HeadElement& phi);
 			HeadElement& operator*=(const TYPE& n);
+			const bool operator==(const HeadElement& phi) const;
 		};
 	
 		TYPE default_num_;
@@ -77,8 +78,8 @@ namespace lsm{
 		SparseMatrix& operator-=(const SparseMatrix& phi);
 		SparseMatrix& operator*=(const SparseMatrix& phi);
 		SparseMatrix& operator*=(const TYPE& phi);
-		bool operator==(const SparseMatrix& phi) const;
-		bool operator!=(const SparseMatrix& phi) const;
+		const bool operator==(const SparseMatrix& phi) const;
+		const bool operator!=(const SparseMatrix& phi) const;
 		const SparseMatrix tensor(SparseMatrix& phi) const;
 		SparseMatrix& tensorEqual(SparseMatrix& phi);
 	
