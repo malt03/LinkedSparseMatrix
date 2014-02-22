@@ -213,9 +213,9 @@ namespace lsm{
 	}
 
 	template<class TYPE>
-	class SparseMatrix<TYPE>::HeadElement::HeadElement
+	const class SparseMatrix<TYPE>::HeadElement::HeadElement
 	SparseMatrix<TYPE>::
-	HeadElement::operator-(){
+	HeadElement::operator-() const{
 		HeadElement tmp(row_);
 		Element* this_tmp = first_element_->next();
 		Element* tmp_tmp = tmp.first_element_ = new Element(first_element_->col(), -(first_element_->val()));
