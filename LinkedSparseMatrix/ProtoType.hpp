@@ -18,9 +18,10 @@ namespace lsm{
 				int col() const{return col_;}
 				Element* next() const{return next_;}
 				Element* setNext(Element* next){return (next_ = next);}
-		
+
 				Element& operator=(const TYPE val);
 				Element& operator+=(const TYPE val);
+				Element& operator-=(const TYPE val);
 			};
 
 			int row_;
@@ -28,6 +29,7 @@ namespace lsm{
 			Element* first_element_;
 		public:
 			HeadElement(const HeadElement& origin);
+			HeadElement(const HeadElement& origin, HeadElement* next);
 			HeadElement(const HeadElement& phi, const HeadElement& psi, const int row);
 			HeadElement(const HeadElement& phi, const SparseMatrix& psi, const int row);
 			HeadElement(const int row, HeadElement* next = NULL, Element* first_element = NULL);
@@ -42,7 +44,11 @@ namespace lsm{
 			TYPE val(const int col) const;
 			Element& operator[](int col);
 
+			HeadElement operator-();
+			HeadElement operator*(const TYPE& n);
 			HeadElement& operator+=(const HeadElement& phi);
+			HeadElement& operator-=(const HeadElement& phi);
+			HeadElement& operator*=(const TYPE& n);
 		};
 	
 		TYPE default_num_;
@@ -61,11 +67,16 @@ namespace lsm{
 		TYPE val(const int row, const int col) const;
 		HeadElement& operator[](const int row);
 
+		const SparseMatrix operator-() const;
 		SparseMatrix& operator=(const SparseMatrix& phi);
 		const SparseMatrix operator+(const SparseMatrix& phi) const;
+		const SparseMatrix operator-(const SparseMatrix& phi) const;
 		const SparseMatrix operator*(const SparseMatrix& phi) const;
+		const SparseMatrix operator*(const TYPE& n) const;
 		SparseMatrix& operator+=(const SparseMatrix& phi);
+		SparseMatrix& operator-=(const SparseMatrix& phi);
 		SparseMatrix& operator*=(const SparseMatrix& phi);
+		SparseMatrix& operator*=(const TYPE& phi);
 		bool operator==(const SparseMatrix& phi) const;
 		bool operator!=(const SparseMatrix& phi) const;
 		const SparseMatrix tensor(SparseMatrix& phi) const;

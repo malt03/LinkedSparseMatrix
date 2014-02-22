@@ -73,7 +73,19 @@ namespace lsm{
 		if(back->row() == row) return *back;
 		return *(back->setNext(new HeadElement(row, front)));
 	}
-	
+
+	template<class TYPE>
+	const SparseMatrix<TYPE>
+	SparseMatrix<TYPE>::operator-() const{
+		SparseMatrix<TYPE> tmp(row_num_, col_num_, default_num_);
+		HeadElement* this_tmp = first_head_element_->next();
+		HeadElement* tmp_tmp = tmp.first_head_element_ = new HeadElement(-*first_head_element_);
+		for(; this_tmp != NULL; this_tmp = this_tmp->next()){
+			tmp_tmp = (tmp_tmp->setNext(new HeadElement(-*this_tmp)));
+		}
+		return tmp;
+	}
+
 	template<class TYPE>
 	SparseMatrix<TYPE>&
 	SparseMatrix<TYPE>::operator=(const SparseMatrix& phi){
@@ -98,7 +110,7 @@ namespace lsm{
 	template<class TYPE>
 	const SparseMatrix<TYPE>
 	SparseMatrix<TYPE>::operator+(const SparseMatrix& phi) const{
-		SparseMatrix tmp(row_num_, col_num_, default_num_ + phi.default_num_);
+		SparseMatrix<TYPE> tmp(row_num_, col_num_, default_num_ + phi.default_num_);
 		if(row_num_ != phi.row_num_ || col_num_ != phi.col_num_){
 			std::cerr << "add error!" << std::endl;
 			return tmp;
@@ -160,8 +172,14 @@ namespace lsm{
 
 	template<class TYPE>
 	const SparseMatrix<TYPE>
+	SparseMatrix<TYPE>::operator-(const SparseMatrix& phi) const{
+		return SparseMatrix<TYPE>(*this + -phi);
+	}
+
+	template<class TYPE>
+	const SparseMatrix<TYPE>
 	SparseMatrix<TYPE>::operator*(const SparseMatrix& phi) const{
-		SparseMatrix tmp(row_num_, phi.col_num_);
+		SparseMatrix<TYPE> tmp(row_num_, phi.col_num_);
 		if(col_num_ != phi.row_num_){
 			std::cerr << "times error!" << std::endl;
 			return tmp;
@@ -195,9 +213,23 @@ namespace lsm{
 	template<class TYPE>
 	SparseMatrix<TYPE>&
 	SparseMatrix<TYPE>::operator+=(const SparseMatrix& phi){
+		if(row_num_ != phi.row_num_ || col_num_ != phi.col_num_){
+			std::cerr << "add error!" << std::endl;
+			return *this;
+		}
+		if(first_head_element_ == NULL){
+			HeadElement* phi_tmp = phi.first_head_element_->next();
+			HeadElement* this_tmp = first_head_element_ = new HeadElement(*phi.first_head_element_);
+			for(; phi_tmp != NULL; phi_tmp = phi_tmp->next()){
+				this_tmp = (this_tmp->setNext(new HeadElement(*phi_tmp)));
+			}
+			return *this;
+		}
+		if(phi.first_head_element_ == NULL) return *this;
+
 		HeadElement* phi_tmp = phi.first_head_element_;
 		HeadElement* this_front = first_head_element_;
-		HeadElement* this_back = first_head_element_;
+		HeadElement* this_back = NULL;
 
 		while(phi_tmp != NULL){
 			if(this_front == NULL){
@@ -205,24 +237,104 @@ namespace lsm{
 				phi_tmp = phi_tmp->next();
 			}else if(phi_tmp->row() == this_front->row()){
 				*this_front += *phi_tmp;
-				this_back = this_front;
-				this_front = this_front->next();
+				if(this_front->isNull()){
+					if(this_back != NULL){
+						this_back->setNext(this_front->next());
+						delete this_front;
+						this_front = this_back->next();
+					}else{
+						this_front = this_front->next();
+						delete first_head_element_;
+						first_head_element_ = this_front;
+					}
+				}else{
+					this_back = this_front;
+					this_front = this_front->next();
+				}
 				phi_tmp = phi_tmp->next();
 			}else if(phi_tmp->row() < this_front->row()){
-				this_back = (this_back->setNext(new HeadElement(phi_tmp->col(), this_front, phi_tmp->val())));
+				if(this_back != NULL){
+					this_back = (this_back->setNext(new HeadElement(*phi_tmp, this_front)));
+				}else{
+					this_back = first_head_element_ = new HeadElement(*phi_tmp, this_front);
+				}
 				phi_tmp = phi_tmp->next();
 			}else{
-				for(; this_front != NULL && this_front->col() < phi_tmp->col(); this_front = this_front->next()){
+				for(; this_front != NULL && this_front->row() < phi_tmp->row(); this_front = this_front->next()){
 					this_back = this_front;
 				}
 			}
 		}
+		
+		return *this;
+	}
+
+	template<class TYPE>
+	SparseMatrix<TYPE>&
+	SparseMatrix<TYPE>::operator-=(const SparseMatrix& phi){
+		if(row_num_ != phi.row_num_ || col_num_ != phi.col_num_){
+			std::cerr << "sub error!" << std::endl;
+			return *this;
+		}
+		if(first_head_element_ == NULL){
+			HeadElement* phi_tmp = phi.first_head_element_->next();
+			HeadElement* this_tmp = first_head_element_ = new HeadElement(-*phi.first_head_element_);
+			for(; phi_tmp != NULL; phi_tmp = phi_tmp->next()){
+				this_tmp = (this_tmp->setNext(new HeadElement(-*phi_tmp)));
+			}
+			return *this;
+		}
+		if(phi.first_head_element_ == NULL) return *this;
+
+		HeadElement* phi_tmp = phi.first_head_element_;
+		HeadElement* this_front = first_head_element_;
+		HeadElement* this_back = NULL;
+
+		while(phi_tmp != NULL){
+			if(this_front == NULL){
+				this_back = (this_back->setNext(new HeadElement(-*phi_tmp)));
+				phi_tmp = phi_tmp->next();
+			}else if(phi_tmp->row() == this_front->row()){
+				*this_front -= *phi_tmp;
+				if(this_front->isNull()){
+					if(this_back != NULL){
+						this_back->setNext(this_front->next());
+						delete this_front;
+						this_front = this_back->next();
+					}else{
+						this_front = this_front->next();
+						delete first_head_element_;
+						first_head_element_ = this_front;
+					}
+				}else{
+					this_back = this_front;
+					this_front = this_front->next();
+				}
+				phi_tmp = phi_tmp->next();
+			}else if(phi_tmp->row() < this_front->row()){
+				if(this_back != NULL){
+					this_back = (this_back->setNext(new HeadElement(-*phi_tmp, this_front)));
+				}else{
+					this_back = first_head_element_ = new HeadElement(-*phi_tmp, this_front);
+				}
+				phi_tmp = phi_tmp->next();
+			}else{
+				for(; this_front != NULL && this_front->row() < phi_tmp->row(); this_front = this_front->next()){
+					this_back = this_front;
+				}
+			}
+		}
+		
+		return *this;
+	}
+
+	template<class TYPE>
+	SparseMatrix<TYPE>&
+	SparseMatrix<TYPE>::operator*=(const SparseMatrix& phi){
+		return (*this = SparseMatrix<TYPE>(*this * phi));
 	}
 	
 	/*
-	SparseMatrix& SparseMatrix::operator*=(const SparseMatrix& phi){
-	}
-	
 	bool SparseMatrix::operator==(const SparseMatrix& phi) const{
 	}
 	

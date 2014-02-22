@@ -1,10 +1,22 @@
 namespace lsm{
-	//HeadElement
 	template<class TYPE>
 	SparseMatrix<TYPE>::
 	HeadElement::HeadElement(const HeadElement& origin){
 		row_ = origin.row_;
 		next_ = NULL;
+
+		Element* origin_tmp = origin.first_element_->next();
+		Element* this_tmp = first_element_ = new Element(*origin.first_element_);
+		for(; origin_tmp != NULL; origin_tmp = origin_tmp->next()){
+			this_tmp = (this_tmp->setNext(new Element(*origin_tmp)));
+		}
+	}
+
+	template<class TYPE>
+	SparseMatrix<TYPE>::
+	HeadElement::HeadElement(const HeadElement& origin, HeadElement* next){
+		row_ = origin.row_;
+		next_ = next;
 
 		Element* origin_tmp = origin.first_element_->next();
 		Element* this_tmp = first_element_ = new Element(*origin.first_element_);
@@ -96,7 +108,8 @@ namespace lsm{
 					this_eback = first_element_ = new Element(psi_etmp->col(), first_element_, psi_etmp->val() * phi_etmp->val());
 					psi_etmp = psi_etmp->next();
 				}else{
-					this_efront = this_eback = first_element_;
+					this_efront = first_element_;
+					this_eback = NULL;
 				}
 			
 				while(psi_etmp != NULL){
@@ -105,6 +118,17 @@ namespace lsm{
 						psi_etmp = psi_etmp->next();
 					}else if(psi_etmp->col() == this_efront->col()){
 						*this_efront += psi_etmp->val() * phi_etmp->val();
+						if(this_efront->val() == TYPE(0)){
+							if(this_eback == NULL){
+								this_efront = this_efront->next();
+								delete first_element_;
+								first_element_ = this_efront;
+							}else{
+								this_eback->setNext(this_efront->next());
+								delete this_efront;
+								this_efront = this_eback->next();
+							}
+						}
 						psi_etmp = psi_etmp->next();
 					}else if(psi_etmp->col() < this_efront->col()){
 						this_eback = (this_eback->setNext(new Element(psi_etmp->col(), this_efront, psi_etmp->val() * phi_etmp->val())));
@@ -189,12 +213,26 @@ namespace lsm{
 	}
 
 	template<class TYPE>
+	class SparseMatrix<TYPE>::HeadElement::HeadElement
+	SparseMatrix<TYPE>::
+	HeadElement::operator-(){
+		HeadElement tmp(row_);
+		Element* this_tmp = first_element_->next();
+		Element* tmp_tmp = tmp.first_element_ = new Element(first_element_->col(), -(first_element_->val()));
+		for(; this_tmp != NULL; this_tmp = this_tmp->next()){
+			tmp_tmp = (tmp_tmp->setNext(new Element(this_tmp->col(), -this_tmp->val())));
+		}
+
+		return tmp;
+	}
+
+	template<class TYPE>
 	class SparseMatrix<TYPE>::HeadElement::HeadElement&
 	SparseMatrix<TYPE>::
 	HeadElement::operator+=(const HeadElement& phi){
 		Element* phi_tmp = phi.first_element_;
 		Element* this_front = first_element_;
-		Element* this_back = first_element_;
+		Element* this_back = NULL;
 
 		while(phi_tmp != NULL){
 			if(this_front == NULL){
@@ -202,11 +240,73 @@ namespace lsm{
 				phi_tmp = phi_tmp->next();
 			}else if(phi_tmp->col() == this_front->col()){
 				*this_front += phi_tmp->val();
-				this_back = this_front;
-				this_front = this_front->next();
+				if(this_front->val() == TYPE(0)){
+					if(this_back != NULL){
+						this_back->setNext(this_front->next());
+						delete this_front;
+						this_front = this_back->next();
+					}else{
+						this_front = this_front->next();
+						delete first_element_;
+						first_element_ = this_front;
+					}
+				}else{
+					this_back = this_front;
+					this_front = this_front->next();
+				}
 				phi_tmp = phi_tmp->next();
 			}else if(phi_tmp->col() < this_front->col()){
-				this_back = (this_back->setNext(new Element(phi_tmp->col(), this_front, phi_tmp->val())));
+				if(this_back != NULL){
+					this_back = (this_back->setNext(new Element(phi_tmp->col(), this_front, phi_tmp->val())));
+				}else{
+					this_back = first_element_ = new Element(phi_tmp->col(), this_front, phi_tmp->val());
+				}
+				phi_tmp = phi_tmp->next();
+			}else{
+				for(; this_front != NULL && this_front->col() < phi_tmp->col(); this_front = this_front->next()){
+					this_back = this_front;
+				}
+			}
+		}
+
+		return *this;
+	}
+
+	template<class TYPE>
+	class SparseMatrix<TYPE>::HeadElement::HeadElement&
+	SparseMatrix<TYPE>::
+	HeadElement::operator-=(const HeadElement& phi){
+		Element* phi_tmp = phi.first_element_;
+		Element* this_front = first_element_;
+		Element* this_back = NULL;
+
+		while(phi_tmp != NULL){
+			if(this_front == NULL){
+				this_back = (this_back->setNext(new Element(phi_tmp->col(), -(phi_tmp->val()))));
+				phi_tmp = phi_tmp->next();
+			}else if(phi_tmp->col() == this_front->col()){
+				*this_front -= phi_tmp->val();
+				if(this_front->val() == TYPE(0)){
+					if(this_back != NULL){
+						this_back->setNext(this_front->next());
+						delete this_front;
+						this_front = this_back->next();
+					}else{
+						this_front = this_front->next();
+						delete first_element_;
+						first_element_ = this_front;
+					}
+				}else{
+					this_back = this_front;
+					this_front = this_front->next();
+				}
+				phi_tmp = phi_tmp->next();
+			}else if(phi_tmp->col() < this_front->col()){
+				if(this_back != NULL){
+					this_back = (this_back->setNext(new Element(phi_tmp->col(), this_front, -(phi_tmp->val()))));
+				}else{
+					this_back = first_element_ = new Element(phi_tmp->col(), this_front, -(phi_tmp->val()));
+				}
 				phi_tmp = phi_tmp->next();
 			}else{
 				for(; this_front != NULL && this_front->col() < phi_tmp->col(); this_front = this_front->next()){

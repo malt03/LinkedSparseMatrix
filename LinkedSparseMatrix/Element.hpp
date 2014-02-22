@@ -38,4 +38,12 @@ namespace lsm{
 		val_ += val;
 		return *this;
 	}
+
+	template<class TYPE>
+	class SparseMatrix<TYPE>::HeadElement::Element&
+	SparseMatrix<TYPE>::HeadElement::
+	Element::operator-=(const TYPE val){
+		val_ -= val;
+		return *this;
+	}
 }
