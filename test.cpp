@@ -1,4 +1,4 @@
-#include "LinkedSparseMatrix.hpp"
+#include "LinkedSparseMatrix/LinkedSparseMatrix.hpp"
 using namespace lsm;
 
 int main(){
@@ -16,7 +16,7 @@ int main(){
 	phi[1][4] = 3;
 	phi[4][4] = -2;
 
-	cout << psi << "\n" << phi << "\n" << psi+phi << endl;
+	std::cout << psi << "\n" << phi << "\n" << psi+phi << std::endl;
 
   return 0;
 }
