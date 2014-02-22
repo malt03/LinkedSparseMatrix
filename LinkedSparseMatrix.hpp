@@ -1,33 +1,30 @@
 #include <iostream>
-#include <complex>
+#include <sstream>
 using namespace std;
 
 namespace lsm{
-	typedef complex<double> cmplx;
-
-	class SparseMatrix;
-
+	template<class TYPE>
 	class SparseMatrix{
 
 		class HeadElement{
 
 			class Element{
-				cmplx val_;
+				TYPE val_;
 				int col_;
 				Element* next_;
 			public:
 				Element(){}
 				Element(const Element& origin);
-				Element(const int col, const cmplx& val);
-				Element(const int col, Element* next = NULL, const cmplx val = cmplx(0));
+				Element(const int col, const TYPE& val);
+				Element(const int col, Element* next = NULL, const TYPE val = TYPE(0));
 
-				cmplx val() const{return val_;}
+				TYPE val() const{return val_;}
 				int col() const{return col_;}
 				Element* next() const{return next_;}
 				Element* setNext(Element* next){return (next_ = next);}
 		
-				Element& operator=(const cmplx val);
-				Element& operator+=(const cmplx val);
+				Element& operator=(const TYPE val);
+				Element& operator+=(const TYPE val);
 			};
 
 			int row_;
@@ -46,13 +43,13 @@ namespace lsm{
 			bool isNull() const{return (first_element_ == NULL);}
 			string str() const;
 
-			cmplx val(const int col) const;
+			TYPE val(const int col) const;
 			Element& operator[](int col);
 
 			HeadElement& operator+=(const HeadElement& phi);
 		};
 	
-		cmplx default_num_;
+		TYPE default_num_;
 		int col_num_, row_num_;
 		HeadElement* first_head_element_;
 
@@ -60,12 +57,12 @@ namespace lsm{
 	public:
 		SparseMatrix(){};
 		SparseMatrix(const SparseMatrix& origin);
-		SparseMatrix(const int row_num, const int col_num, const cmplx default_num = cmplx(0));
+		SparseMatrix(const int row_num, const int col_num, const TYPE default_num = TYPE(0));
 		~SparseMatrix();
 
 		string str() const;
 
-		cmplx val(const int row, const int col) const;
+		TYPE val(const int row, const int col) const;
 		HeadElement& operator[](const int row);
 
 		SparseMatrix& operator=(const SparseMatrix& phi);
@@ -78,43 +75,57 @@ namespace lsm{
 		const SparseMatrix tensor(SparseMatrix& phi) const;
 		SparseMatrix& tensorEqual(SparseMatrix& phi);
 	
-		cmplx getDefaultNum() const{return default_num_;}
+		TYPE getDefaultNum() const{return default_num_;}
 	};
 
 
 	/*********************************functions*********************************/
 
 	//Element
-	SparseMatrix::HeadElement::Element::Element(const Element& origin){
+	template<class TYPE>
+	SparseMatrix<TYPE>::HeadElement::
+	Element::Element(const Element& origin){
 		col_ = origin.col_;
 		val_ = origin.val_;
 		next_ = NULL;
 	}
 
-	SparseMatrix::HeadElement::Element::Element(const int col, const cmplx& val){
+	template<class TYPE>
+	SparseMatrix<TYPE>::HeadElement::
+	Element::Element(const int col, const TYPE& val){
 		col_ = col;
 		val_ = val;
 		next_ = NULL;
 	}
 	
-	SparseMatrix::HeadElement::Element::Element(const int col, Element* next, const cmplx val){
+	template<class TYPE>
+	SparseMatrix<TYPE>::HeadElement::
+	Element::Element(const int col, Element* next, const TYPE val){
 		col_ = col;
 		next_ = next;
 		val_ = val;
 	}
 
-	SparseMatrix::HeadElement::Element& SparseMatrix::HeadElement::Element::operator=(const cmplx val){
+	template<class TYPE>
+	class SparseMatrix<TYPE>::HeadElement::Element&
+	SparseMatrix<TYPE>::HeadElement::
+	Element::operator=(const TYPE val){
 		val_ = val;
 		return *this;
 	}
 
-	SparseMatrix::HeadElement::Element& SparseMatrix::HeadElement::Element::operator+=(const cmplx val){
+	template<class TYPE>
+	class SparseMatrix<TYPE>::HeadElement::Element&
+	SparseMatrix<TYPE>::HeadElement::
+	Element::operator+=(const TYPE val){
 		val_ += val;
 		return *this;
 	}
 
 	//HeadElement
-	SparseMatrix::HeadElement::HeadElement(const HeadElement& origin){
+	template<class TYPE>
+	SparseMatrix<TYPE>::
+	HeadElement::HeadElement(const HeadElement& origin){
 		row_ = origin.row_;
 		next_ = NULL;
 
@@ -125,7 +136,9 @@ namespace lsm{
 		}
 	}
 
-	SparseMatrix::HeadElement::HeadElement(const HeadElement& phi, const HeadElement& psi, const int row){
+	template<class TYPE>
+	SparseMatrix<TYPE>::
+	HeadElement::HeadElement(const HeadElement& phi, const HeadElement& psi, const int row){
 		row_ = row;
 		next_ = NULL;
 
@@ -135,7 +148,7 @@ namespace lsm{
 
 		while(phi_tmp != NULL || psi_tmp != NULL){
 			if(phi_tmp->col() == psi_tmp->col()){
-				if(phi_tmp->val() + psi_tmp->val() == cmplx(0)){
+				if(phi_tmp->val() + psi_tmp->val() == TYPE(0)){
 					first_element_ = NULL;
 					phi_tmp = phi_tmp->next();
 					psi_tmp = psi_tmp->next();
@@ -158,7 +171,7 @@ namespace lsm{
 
 		while(phi_tmp != NULL && psi_tmp != NULL){
 			if(phi_tmp->col() == psi_tmp->col()){
-				if(phi_tmp->val() + psi_tmp->val() == cmplx(0)){
+				if(phi_tmp->val() + psi_tmp->val() == TYPE(0)){
 					phi_tmp = phi_tmp->next();
 					psi_tmp = psi_tmp->next();
 					continue;
@@ -181,7 +194,9 @@ namespace lsm{
 		}
 	}
 
-	SparseMatrix::HeadElement::HeadElement(const HeadElement& phi, const SparseMatrix& psi, const int row){
+	template<class TYPE>
+	SparseMatrix<TYPE>::
+	HeadElement::HeadElement(const HeadElement& phi, const SparseMatrix& psi, const int row){
 		row_ = row;
 		next_ = NULL;
 		first_element_ = NULL;
@@ -234,13 +249,17 @@ namespace lsm{
 		}
 	}
 	
-	SparseMatrix::HeadElement::HeadElement(const int row, HeadElement* next, Element* first_element){
+	template<class TYPE>
+	SparseMatrix<TYPE>::
+	HeadElement::HeadElement(const int row, HeadElement* next, Element* first_element){
 		row_ = row;
 		next_ = next;
 		first_element_ = first_element;
 	}
 
-	SparseMatrix::HeadElement::~HeadElement(){
+	template<class TYPE>
+	SparseMatrix<TYPE>::
+	HeadElement::~HeadElement(){
 		Element *tmp1, *tmp2;
 		for(tmp1 = first_element_; tmp1 != NULL; tmp1 = tmp2){
 			tmp2 = tmp1->next();
@@ -248,17 +267,23 @@ namespace lsm{
 		}
 	}
 
-	cmplx SparseMatrix::HeadElement::val(const int col) const{
+	template<class TYPE>
+	TYPE
+	SparseMatrix<TYPE>::
+	HeadElement::val(const int col) const{
 		Element *front, *back;
 		for(front = back = first_element_;
 				(front != NULL && front->col() <= col);
 				front = front->next()) back = front;
-		if(back->col() != col) return cmplx(0);
+		if(back->col() != col) return TYPE(0);
 
 		return back->val();
 	}
 
-	string SparseMatrix::HeadElement::str() const{
+	template<class TYPE>
+	string
+	SparseMatrix<TYPE>::
+	HeadElement::str() const{
 		Element* tmp;
 		ostringstream ostr;
 		for(tmp = first_element_; tmp != NULL; tmp = tmp->next()){
@@ -267,7 +292,10 @@ namespace lsm{
 		return ostr.str();
 	}
 
-	SparseMatrix::HeadElement::Element& SparseMatrix::HeadElement::operator[](const int col){
+	template<class TYPE>
+	class SparseMatrix<TYPE>::HeadElement::Element&
+	SparseMatrix<TYPE>::
+	HeadElement::operator[](const int col){
 		Element* front;
 		Element* back;
 
@@ -293,7 +321,7 @@ namespace lsm{
 				this_back = (this_back->setNext(new Element(*phi_tmp)));
 				phi_tmp = phi_tmp->next();
 			}else if(phi_tmp->col() == this_front->col()){
-				if(phi_tmp->val() + this_front->val() == cmplx(0)){
+				if(phi_tmp->val() + this_front->val() == TYPE(0)){
 					Element* tmp = this_front;
 					this_front = this_front->next();
 					this_back->setNext(this_front);
@@ -316,7 +344,8 @@ namespace lsm{
 	}
 	*/
 	//SparseMatrix
-	SparseMatrix::SparseMatrix(const SparseMatrix& origin){
+	template<class TYPE>
+	SparseMatrix<TYPE>::SparseMatrix(const SparseMatrix& origin){
 		row_num_ = origin.row_num_;
 		col_num_ = origin.col_num_;
 		default_num_ = origin.default_num_;
@@ -328,14 +357,16 @@ namespace lsm{
 		}
 	}
 	
-	SparseMatrix::SparseMatrix(const int row_num, const int col_num, const cmplx default_num){
+	template<class TYPE>
+	SparseMatrix<TYPE>::SparseMatrix(const int row_num, const int col_num, const TYPE default_num){
 		row_num_ = row_num;
 		col_num_ = col_num;
 		default_num_ = default_num;
 		first_head_element_ = NULL;
 	}
 
-	SparseMatrix::~SparseMatrix(){
+	template<class TYPE>
+	SparseMatrix<TYPE>::~SparseMatrix(){
 		HeadElement *tmp1, *tmp2;
 		for(tmp1 = first_head_element_; tmp1 != NULL; tmp1 = tmp2){
 			tmp2 = tmp1->next();
@@ -343,7 +374,9 @@ namespace lsm{
 		}
 	}
 
-	string SparseMatrix::str() const{
+	template<class TYPE>
+	string
+	SparseMatrix<TYPE>::str() const{
 		HeadElement* tmp;
 		ostringstream ostr;
 
@@ -356,17 +389,21 @@ namespace lsm{
 		return ostr.str();
 	}
 
-	cmplx SparseMatrix::val(const int row, const int col) const{
+	template<class TYPE>
+	TYPE
+	SparseMatrix<TYPE>::val(const int row, const int col) const{
 		HeadElement *hfront, *hback;
 		for(hfront = hback = first_head_element_;
 				(hfront != NULL && hfront->row() <= row);
 				hfront = hfront->next()) hback = hfront;
-		if(hback->row() != row) return cmplx(0);
+		if(hback->row() != row) return TYPE(0);
 
 		return hback->val(col);
 	}
 
-	SparseMatrix::HeadElement& SparseMatrix::operator[](const int row){
+	template<class TYPE>
+	class SparseMatrix<TYPE>::HeadElement&
+	SparseMatrix<TYPE>::operator[](const int row){
 		HeadElement* front;
 		HeadElement* back;
 
@@ -382,7 +419,9 @@ namespace lsm{
 		return *(back->setNext(new HeadElement(row, front)));
 	}
 	
-	SparseMatrix& SparseMatrix::operator=(const SparseMatrix& phi){
+	template<class TYPE>
+	SparseMatrix<TYPE>&
+	SparseMatrix<TYPE>::operator=(const SparseMatrix& phi){
 		HeadElement *tmp1, *tmp2;
 		for(tmp1 = first_head_element_; tmp1 != NULL; tmp1 = tmp2){
 			tmp2 = tmp1->next();
@@ -401,7 +440,9 @@ namespace lsm{
 		return *this;
 	}
 
-	const SparseMatrix SparseMatrix::operator+(const SparseMatrix& phi) const{
+	template<class TYPE>
+	const SparseMatrix<TYPE>
+	SparseMatrix<TYPE>::operator+(const SparseMatrix& phi) const{
 		SparseMatrix tmp(row_num_, col_num_, default_num_ + phi.default_num_);
 		if(row_num_ != phi.row_num_ || col_num_ != phi.col_num_){
 			cerr << "add error!" << endl;
@@ -461,8 +502,10 @@ namespace lsm{
 
 		return tmp;
 	}
-	
-	const SparseMatrix SparseMatrix::operator*(const SparseMatrix& phi) const{
+
+	template<class TYPE>
+	const SparseMatrix<TYPE>
+	SparseMatrix<TYPE>::operator*(const SparseMatrix& phi) const{
 		SparseMatrix tmp(row_num_, phi.col_num_);
 		if(col_num_ != phi.row_num_){
 			cerr << "times error!" << endl;
@@ -514,7 +557,8 @@ namespace lsm{
 	}*/
 
 	/*********************************operators*********************************/
-	ostream& operator<<(ostream& os, const SparseMatrix& phi){
+	template<class TYPE>
+	ostream& operator<<(ostream& os, const SparseMatrix<TYPE>& phi){
 		os << phi.str();
 
 		return os;
